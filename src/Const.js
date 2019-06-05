@@ -1,4 +1,4 @@
-export const DEV_ENV = true;
+export const DEV_ENV = false;
 export const DEV_DEVICE = false;
 // export const DEV_ENV = false;
 // export const DEV_HOST_ADDRESS = 'http://localhost:3000';
