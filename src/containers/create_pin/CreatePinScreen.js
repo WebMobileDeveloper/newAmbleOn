@@ -20,8 +20,13 @@ export default class CreatePinScreen extends Component {
     this.onSavePin = this.onSavePin.bind(this);
   }
   choiceAcion(needCamera, media_type) {
-    this.setState({ modalVisible: false });
-    this.props.openPicker(needCamera, media_type);
+    this.setState({ modalVisible: false },()=>{
+      let self = this
+      setTimeout(()=>{
+        self.props.openPicker(needCamera, media_type);
+      },500)
+      
+    });
   }
 
   showRecordModal = () => {

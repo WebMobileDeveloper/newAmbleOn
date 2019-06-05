@@ -80,6 +80,7 @@ export const styles = StyleSheet.create({
         flex: 9,
     },
     tourImg: {
+        marginTop: 20,
         width: width(84),
         height: width(50),
     },

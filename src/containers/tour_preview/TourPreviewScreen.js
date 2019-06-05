@@ -14,22 +14,17 @@ const renderPrevImage = pins => {
         for (j = 0; j < pins[i].attachments.length; j++) {
             const attachment = pins[i].attachments[j];
             if (attachment.media_type == 1) {
-                return renderImage(attachment);
+                return attachment.uri;
             }
         }
     }
     return null;
 }
-const renderImage = (prevImage) => {
-    <Image
-        resizeMode="contain"
-        style={styles.tourImg}
-        source={{ uri: `${img.imageServiceUrl}${prevImage.uri}` }}
-    />
-}
 const TourPreviewScreen = ({
     currTour, navigation, showOverlay, newRate,
     navigateStartTour, onShowFeedbackOverlay, onCloseOverlay, onGiveFeedback, ratingCompleted }) => {
+    const tourImage = renderPrevImage(currTour.pins);
+    console.log("tourImage",tourImage)
     return (
         <View style={styles.container}>
             <View style={styles.headerContainer}>
@@ -46,8 +41,11 @@ const TourPreviewScreen = ({
                 <View style={styles.infoContainer}>
                     <Text style={styles.tourTitle}>{currTour.title}</Text>
                     <MyAirbnbRating tour={currTour} onPress={onShowFeedbackOverlay} />
-                    {/* onFinishRating={this.ratingCompleted} */}
-                    {renderPrevImage(currTour.pins)}
+                    {tourImage && <Image
+                        resizeMode="contain"
+                        style={styles.tourImg}
+                        source={{ uri: `${img.imageServiceUrl}${tourImage}` }}
+                    />}
                     <Text style={styles.tourDescription}>{currTour.description}</Text>
                     <Text style={styles.tourTextPins}>{`Pins: ${currTour.pins.length}`}</Text>
                 </View>

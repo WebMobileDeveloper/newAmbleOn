@@ -37,6 +37,7 @@ export default class MyCarousel extends Component {
                 return <View style={styles.swiperChild} key={index} >
                     <VideoPlayer
                         source={{ uri: `${images.imageServiceUrl}${item.uri}` }} style={styles.backgroundVideo}
+                        paused={true}
                         // navigator={this.props.navigator ? this.props.navigator : null}
                     />
                     {/* <Video source={{ uri: `${images.imageServiceUrl}${item.uri}` }}

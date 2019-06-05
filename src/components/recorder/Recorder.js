@@ -23,7 +23,7 @@ export default class Recorder extends Component {
             duration: '00:00:00',
             uri: null,
             path: Platform.select({
-                ios: dirs.CacheDir + '/hello.m4a',
+                ios: '/hello.m4a',
                 android: dirs.CacheDir + '/hello.mp4',
             }),
         };
