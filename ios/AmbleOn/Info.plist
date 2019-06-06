@@ -38,7 +38,7 @@
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
-	<string>2</string>
+	<string>3</string>
 	<key>FacebookAppID</key>
 	<string>2632017823480237</string>
 	<key>FacebookDisplayName</key>
@@ -68,7 +68,9 @@
 	<key>NSCameraUsageDescription</key>
 	<string>$(PRODUCT_NAME) camera use</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string></string>
+	<string>Location is required to find out where you are.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Location is required to find out where you are.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>$(PRODUCT_NAME) micro phone use</string>
 	<key>NSPhotoLibraryUsageDescription</key>

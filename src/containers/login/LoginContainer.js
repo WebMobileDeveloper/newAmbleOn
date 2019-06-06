@@ -9,6 +9,7 @@ import {
 } from '../../actions/authActions';
 import { navigationPropTypes } from '../../constants/propTypes';
 import LoginScreen from './LoginScreen';
+import * as ENV from '../../Const';
 
 class LoginContainer extends PureComponent {
   onFacebookLogin = async () => {
@@ -26,11 +27,16 @@ class LoginContainer extends PureComponent {
 
   onGoogleSignIn = async () => {
     const { navigation, googleSignIn } = this.props;
+    if (ENV.DEV_DEVICE) {
+      googleSignIn({ accessToken: ENV.DEV_ACCESS_TOKEN, userId: ENV.DEV_USER_ID, cb: () => navigation.navigate('AppStack') })
+    } else {
+      await oauthService.google({
+        success: (accessToken, userId) =>
+          googleSignIn({ accessToken, userId, cb: () => navigation.navigate('AppStack') }),
+      });
+    }
 
-    await oauthService.google({
-      success: (accessToken, userId) =>
-        googleSignIn({ accessToken, userId, cb: () => navigation.navigate('AppStack') }),
-    });
+
   };
 
   render() {
