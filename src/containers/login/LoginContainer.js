@@ -27,14 +27,21 @@ class LoginContainer extends PureComponent {
 
   onGoogleSignIn = async () => {
     const { navigation, googleSignIn } = this.props;
-    if (ENV.DEV_DEVICE) {
-      googleSignIn({ accessToken: ENV.DEV_ACCESS_TOKEN, userId: ENV.DEV_USER_ID, cb: () => navigation.navigate('AppStack') })
-    } else {
-      await oauthService.google({
-        success: (accessToken, userId) =>
-          googleSignIn({ accessToken, userId, cb: () => navigation.navigate('AppStack') }),
-      });
-    }
+    await oauthService.google({
+      success: (accessToken, userId) =>{
+        console.log(accessToken, userId)
+        return googleSignIn({ accessToken, userId, cb: () => navigation.navigate('AppStack') })
+      }
+    });
+
+    // if (ENV.DEV_DEVICE) {
+    //   googleSignIn({ accessToken: ENV.DEV_ACCESS_TOKEN, userId: ENV.DEV_USER_ID, cb: () => navigation.navigate('AppStack') })
+    // } else {
+    //   await oauthService.google({
+    //     success: (accessToken, userId) =>
+    //       googleSignIn({ accessToken, userId, cb: () => navigation.navigate('AppStack') }),
+    //   });
+    // }
 
 
   };

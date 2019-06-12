@@ -10,7 +10,7 @@ import { DocumentPicker, DocumentPickerUtil } from 'react-native-document-picker
 import { getFileName, getFileExtention } from '../../utils/imagePickerUtils';
 import withKeyboardDismiss from '../../hocs/withKeyboardDismiss';
 import { addPinToTour, addAttachmentToPin } from '../../actions/toursActions';
-import {CreateTourSchema} from '../../utils/validationSchemes';
+import { CreateTourSchema } from '../../utils/validationSchemes';
 import CreatePinScreen from './CreatePinScreen';
 
 class CreatePinContainer extends Component {
@@ -123,40 +123,38 @@ class CreatePinContainer extends Component {
           this.handleCreatePinSubmit(media_type, file);
         }).catch(err => { });
       } else {
-        if (Platform.isPad) {
-
-          const { pageX, pageY } = event.nativeEvent;
-
-          DocumentPicker.show({
-            top: pageY,
-            left: pageX,
-            filetype: [DocumentPickerUtil.audio()],
-          }, (error, url) => {
-            if (error) return;
-            const fileName = getFileName(url);
-            const fileExtension = getFileExtention(url);
-            const final_filename = `${fileName}${fileExtension}`;
-            const file = {
-              imagePath: url,
-              type: `audio/${fileExtension}`,
-              name: final_filename,
-            }
-            this.handleCreatePinSubmit(media_type, file);
-          });
-        } else {
-          DocumentPicker.show({
-            filetype: [DocumentPickerUtil.audio()],
-          }, (error, res) => {
-            if (error) return;
-            const fileExtension = getFileExtention(res.uri);
-            const file = {
-              imagePath: res.uri,
-              type: `audio/${fileExtension}`,
-              name: res.fileName,
-            }
-            this.handleCreatePinSubmit(media_type, file);
-          });
-        }
+        // if (Platform.isPad) {
+        //   const { pageX, pageY } = event.nativeEvent;
+        //   DocumentPicker.show({
+        //     top: pageY,
+        //     left: pageX,
+        //     filetype: [DocumentPickerUtil.audio()],
+        //   }, (error, url) => {
+        //     if (error) return;
+        //     const fileName = getFileName(url);
+        //     const fileExtension = getFileExtention(url);
+        //     const final_filename = `${fileName}${fileExtension}`;
+        //     const file = {
+        //       imagePath: url,
+        //       type: `audio/${fileExtension}`,
+        //       name: final_filename,
+        //     }
+        //     this.handleCreatePinSubmit(media_type, file);
+        //   });
+        // } else {
+        DocumentPicker.show({
+          filetype: [DocumentPickerUtil.audio()],
+        }, (error, res) => {
+          if (error) return;
+          const fileExtension = getFileExtention(res.uri);
+          const file = {
+            imagePath: res.uri,
+            type: `audio/${fileExtension}`,
+            name: res.fileName,
+          }
+          this.handleCreatePinSubmit(media_type, file);
+        });
+        // }
       }
     }
   };

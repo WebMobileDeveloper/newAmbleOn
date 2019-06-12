@@ -1,199 +1,333 @@
 import React, { Component, SyntheticEvent } from 'react';
-import { Platform, StyleSheet, TouchableOpacity, Text, View, PermissionsAndroid, Button, Alert } from 'react-native';
-import { ratio, colors, screenWidth, titleString } from './Styles';
+import { Platform, StyleSheet, TouchableOpacity, Text, View, PermissionsAndroid, Alert, TouchableHighlight, Slider } from 'react-native';
+import { Form, Button } from 'native-base';
+import { ratio, colors, screenWidth, titleString, getRecButTxt, recordState, getButTxt } from './Styles';
 import RecorderButton from './RecorderButton';
 import AudioRecorderPlayer from 'react-native-audio-recorder-player';
 import RNFetchBlob from 'rn-fetch-blob';
+import { mmss, mmssss } from '../../Const';
+import { scale } from '../../utils/dimensions';
+
+
+import Sound from 'react-native-sound';
+import { AudioRecorder, AudioUtils } from 'react-native-audio';
 
 
 export default class Recorder extends Component {
-    //   private timer: any;
-    //   private subscription: any;
-
     constructor(props) {
         super(props);
-        const dirs = RNFetchBlob.fs.dirs
         this.state = {
-            isLoggingIn: false,
-            recordSecs: 0,
-            recordTime: '00:00:00',
-            currentPositionSec: 0,
-            currentDurationSec: 0,
-            playTime: '00:00:00',
-            duration: '00:00:00',
-            uri: null,
-            path: Platform.select({
-                ios: '/hello.m4a',
-                android: dirs.CacheDir + '/hello.mp4',
-            }),
+            recordTime: 0,
+            playTime: 0,
+            duration: 0,
+            recordTimeStr: '00:00',
+            playTimeStr: '00:00',
+            durationStr: '00:00',
+            recordState: recordState.ready,
+            audioPath: AudioUtils.DocumentDirectoryPath + '/test.aac',
+            hasPermission: undefined,
         };
+        this._isMounted = false;
+        this.Player = null;
+        this.sliderEditing = false;
 
 
-        // console.warn("dirs.DocumentDir", dirs.DocumentDir)
-        // console.warn("dirs.CacheDir", dirs.CacheDir)
-        // console.warn("dirs.DCIMDir", dirs.DCIMDir)
-        // console.warn("dirs.DownloadDir", dirs.DownloadDir)
-        this.audioRecorderPlayer = new AudioRecorderPlayer();
-        this.audioRecorderPlayer.setSubscriptionDuration(0.09); // optional. Default is 0.1
-        this.onStatusPress = this.onStatusPress.bind(this);
-        this.onStartRecord = this.onStartRecord.bind(this);
-        this.onStopRecord = this.onStopRecord.bind(this);
-        this.onStartPlay = this.onStartPlay.bind(this);
-        this.onPausePlay = this.onPausePlay.bind(this);
-        this.onStopPlay = this.onStopPlay.bind(this);
+        this.prepareRecordingPath = this.prepareRecordingPath.bind(this);
+        this.recordFunc = this.recordFunc.bind(this);
+        this._record = this._record.bind(this);
+        this._pause = this._pause.bind(this);
+        this._resume = this._resume.bind(this);
+        this._stop = this._stop.bind(this);
+        this._finishRecording = this._finishRecording.bind(this);
+        this.playFunc = this.playFunc.bind(this);
+        this._play = this._play.bind(this);
+        this.playComplete = this.playComplete.bind(this);
+        this._playPause = this._playPause.bind(this);
+        this._playStop = this._playStop.bind(this);
+        this.onSliderEditStart = this.onSliderEditStart.bind(this);
+        this.onSliderEditEnd = this.onSliderEditEnd.bind(this);
+        this.onSliderEditing = this.onSliderEditing.bind(this);
         this.onUpload = this.onUpload.bind(this);
-        this.onCancel = this.onCancel.bind(this);
     }
-    onStatusPress = (e) => {
-        const touchX = e.nativeEvent.locationX;
-        const playWidth = (this.state.currentPositionSec / this.state.currentDurationSec) * (screenWidth - 56 * ratio);
-        const currentPosition = Math.round(this.state.currentPositionSec);
-        if (playWidth && playWidth < touchX) {
-            const addSecs = Math.round((currentPosition + 3000));
-            this.audioRecorderPlayer.seekToPlayer(addSecs);
-        } else {
-            const subSecs = Math.round((currentPosition - 3000));
-            this.audioRecorderPlayer.seekToPlayer(subSecs);
+    prepareRecordingPath(audioPath) {
+        AudioRecorder.prepareRecordingAtPath(audioPath, {
+            SampleRate: 22050,
+            Channels: 1,
+            AudioQuality: "Low",
+            AudioEncoding: "aac",
+            AudioEncodingBitRate: 32000
+        });
+    }
+    componentDidMount() {
+        this._isMounted = true;
+        AudioRecorder.requestAuthorization().then((isAuthorised) => {
+            this._isMounted && this.setState({ hasPermission: isAuthorised });
+            if (!isAuthorised) return;
+            AudioRecorder.onProgress = (data) => {
+                const currentTime = Math.floor(data.currentTime);
+                this._isMounted && this.setState({
+                    recordTime: currentTime,
+                    recordTimeStr: mmss(currentTime),
+                });
+            };
+            AudioRecorder.onFinished = (data) => {
+                // Android callback comes in the form of a promise instead.
+                if (Platform.OS === 'ios') {
+                    this._isMounted && this._finishRecording(data.status === "OK", data.audioFileURL, data.audioFileSize);
+                }
+            };
+        });
+        this.timeout = setInterval(() => {
+            if (this.Player && this.Player.isLoaded() && this.state.recordState == recordState.playing && !this.sliderEditing) {
+                this.Player.getCurrentTime((seconds, isPlaying) => {
+                    this._isMounted && this.setState({ playTime: seconds, playTimeStr: mmss(seconds) });
+                })
+            }
+        }, 100);
+    }
+    componentWillUnmount() {
+        let self = this;
+        self._isMounted = false;
+        if (self.timeout) {
+            clearInterval(self.timeout);
+        }
+        self._playStop();
+        self._stop();
+    }
+    // =============================================
+    //              Record functions
+    // =============================================
+    recordFunc = (butText) => {
+        switch (butText) {
+            case 'Record':
+                this._record();
+                break;
+            case 'Pause':
+                this._pause();
+                break;
+            case 'Resume':
+                this._resume();
+                break;
+        }
+    }
+    async _record() {
+        if (!this.state.hasPermission) {
+            Alert.alert('Can\'t record, no permission granted!');
+            return;
+        }
+        if (this.state.recordState == recordState.playing || this.state.recordState == recordState.play_paused) {
+            await this._playStop();
+        }
+        if (this.state.recordState == recordState.ready) {
+            this.prepareRecordingPath(this.state.audioPath);
+        }
+
+        try {
+            console.log("this.state.recordState", this.state.recordState)
+            await AudioRecorder.startRecording();
+            this._isMounted && this.setState({ recordState: recordState.recording });
+        } catch (error) {
+            console.error(error);
         }
     }
 
-    onStartRecord = async () => {
-        if (Platform.OS === 'android') {
+    async _pause() {
+        try {
+            await AudioRecorder.pauseRecording();
+            this._isMounted && this.setState({ recordState: recordState.paused });
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    async _resume() {
+        try {
+            await AudioRecorder.resumeRecording();
+            this._isMounted && this.setState({ recordState: recordState.recording });
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    async _stop() {
+        const self = this;
+
+        if (self.state.recordState == recordState.recording || self.state.recordState == recordState.paused) {
             try {
-                const granted = await PermissionsAndroid.request(
-                    PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
-                    {
-                        title: 'Permissions for write access',
-                        message: 'Give permission to your storage to write a file',
-                    },
-                );
-                if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-                    console.log('You can use the camera');
-                } else {
-                    console.log('permission denied');
-                    this.onCancel();
-                    return;
+                const filePath = await AudioRecorder.stopRecording();
+                if (self._isMounted) {
+                    self.setState({ recordState: recordState.ready });
+                    if (Platform.OS === 'android') {
+                        self._isMounted && self._finishRecording(true, filePath);
+                    }
                 }
-            } catch (err) {
-                this.onCancel();
+                return filePath;
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+    }
+    _finishRecording(didSucceed, filePath, fileSize) {
+        this._isMounted && this.setState({ finished: didSucceed });
+    }
+
+    // =============================================
+    //              play functions
+    // =============================================
+    playFunc = (butText) => {
+        switch (butText) {
+            case 'Play':
+                this._play();
+                break;
+            case 'Pause':
+                this._playPause();
+                break;
+            case 'Resume':
+                this._play();
+                break;
+        }
+    }
+    async _play() {
+        if (!this.state.recordTime) {
+            return
+        };
+        if (this.Player) {
+            this.setState({ recordState: recordState.playing });
+            this.Player.play(this.playComplete);
+        } else {
+            if (this.state.recordState == recordState.recording || this.state.recordState == recordState.paused) {
+                await this._stop();
+            }
+            // setTimeout(() => {
+            this.Player = new Sound(this.state.audioPath, '', (error) => {
+                if (error) {
+                    console.log('failed to load the sound', error);
+                } else {
+                    if (this._isMounted) {
+                        const duration = this.Player.getDuration();
+                        this.setState({
+                            recordState: recordState.playing,
+                            duration: duration,
+                            durationStr: mmss(duration)
+                        });
+                        this.Player.play(this.playComplete);
+                    }
+
+                }
+            });
+            // }, 100);
+        }
+    }
+    async playComplete(success) {
+        if (this.Player && this._isMounted) {
+            if (!success) {
+                Alert.alert('Notice', 'audio file error');
+            }
+            await this._playStop();
+        }
+    }
+    _playPause() {
+        this.Player.pause(() => {
+            this._isMounted && this.setState({ recordState: recordState.play_paused })
+        })
+    }
+
+    _playStop() {
+        const self = this;
+        return new Promise((resolve, reject) => {
+            if (!self.Player) {
+                resolve()
+            }
+            self.Player.stop(() => {
+                self.Player.release();
+                self.Player = null;
+                if (self._isMounted) {
+                    self.setState({
+                        recordState: recordState.ready,
+                        playTime: 0,
+                        playTimeStr: mmss(0),
+                    }, () => {
+                        resolve()
+                    });
+                } else {
+                    resolve()
+                }
+            })
+        })
+
+    }
+
+    onSliderEditStart = () => {
+        this.sliderEditing = true;
+    }
+    onSliderEditEnd = () => {
+        this.sliderEditing = false;
+    }
+    onSliderEditing = value => {
+        if (this.Player) {
+            this.Player.setCurrentTime(value);
+            this.setState({ playTime: value, playTimeStr: mmss(value) });
+        }
+    }
+
+    // =============================================
+    //              general functions
+    // =============================================
+
+    onUpload(withUrl = true) {
+        if (this.state.recordState == recordState.recording || this.state.recordState == recordState.paused) {
+            Alert.alert("You are recording now. Please stop record and try again!");
+            return;
+        }
+        if (withUrl) {
+            if (this.state.recordTime) {
+                this.props.onUpload("file://" + this.state.audioPath);
+            } else {
+                Alert.alert("There isn't any record data!");
                 return;
             }
-        }
-        if (Platform.OS === 'android') {
-            try {
-                const granted = await PermissionsAndroid.request(
-                    PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
-                    {
-                        title: 'Permissions for write access',
-                        message: 'Give permission to your storage to write a file',
-                    },
-                );
-                if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-                    console.log('You can use the camera');
-                } else {
-                    console.log('permission denied');
-                    this.onCancel();
-                    return;
-                }
-            } catch (err) {
-                this.onCancel();
-                return;
-            }
-        }
-
-        const uri = await this.audioRecorderPlayer.startRecorder(this.state.path);
-        this.setState({ uri: uri })
-        this.audioRecorderPlayer.addRecordBackListener((e) => {
-            this.setState({
-                recordSecs: e.current_position,
-                recordTime: this.audioRecorderPlayer.mmssss(Math.floor(e.current_position)),
-            });
-            return;
-        });
-    }
-
-    onStopRecord = async () => {
-        const result = await this.audioRecorderPlayer.stopRecorder();
-        this.audioRecorderPlayer.removeRecordBackListener();
-        this.setState({
-            recordSecs: 0,
-        });
-    }
-
-    onStartPlay = async () => {
-        const msg = await this.audioRecorderPlayer.startPlayer(this.state.path);
-        this.audioRecorderPlayer.setVolume(1.0);
-        this.audioRecorderPlayer.addPlayBackListener((e) => {
-            if (e.current_position === e.duration) {
-                this.audioRecorderPlayer.stopPlayer();
-            }
-            this.setState({
-                currentPositionSec: e.current_position,
-                currentDurationSec: e.duration,
-                playTime: this.audioRecorderPlayer.mmssss(Math.floor(e.current_position)),
-                duration: this.audioRecorderPlayer.mmssss(Math.floor(e.duration)),
-            });
-            return;
-        });
-    }
-
-    onPausePlay = async () => {
-        await this.audioRecorderPlayer.pausePlayer();
-    }
-    onStopPlay = async () => {
-        this.audioRecorderPlayer.stopPlayer();
-        this.audioRecorderPlayer.removePlayBackListener();
-    }
-    onUpload = () => {
-        const uri = this.state.uri;
-        if (uri) {
-            this.setState({ uri: null });
-            this.props.onUpload(uri);
         } else {
-            Alert.alert("There isn't any record data!");
-            return;
+            this.props.onUpload();
         }
-    }
-    onCancel = () => {
-        this.setState({ uri: null });
-        this.props.onUpload();
+
     }
     render() {
-        // console.warn("audio path= ", this.state.path);
-        const playWidth = this.state.currentDurationSec == 0 ? 0 : (this.state.currentPositionSec / this.state.currentDurationSec) * (screenWidth - 56 * ratio);
+        let butText = getButTxt(this.state.recordState);
         return (
             <View style={styles.container}>
                 <Text style={styles.titleTxt}>{titleString.TITLE}</Text>
-                <Text style={styles.txtRecordCounter}>{this.state.recordTime}</Text>
+                <Text style={styles.txtRecordCounter}>{this.state.recordTimeStr}</Text>
                 <View style={styles.viewRecorder}>
                     <View style={styles.recordBtnWrapper}>
-                        <RecorderButton style={styles.btn} onPress={this.onStartRecord} textStyle={styles.txt}>{titleString.RECORD}</RecorderButton>
-                        <RecorderButton style={[styles.btn, { marginLeft: 12 * ratio, },]} onPress={this.onStopRecord} textStyle={styles.txt}>{titleString.STOP}</RecorderButton>
+                        <RecorderButton style={styles.btn} onPress={() => this.recordFunc(butText.record)} textStyle={styles.txt}>{butText.record}</RecorderButton>
+                        <RecorderButton style={[styles.btn, { marginLeft: 100 * ratio, },]} onPress={() => this._stop()} textStyle={styles.txt}>{titleString.STOP}</RecorderButton>
                     </View>
                 </View>
                 <View style={styles.viewPlayer}>
-                    <TouchableOpacity style={styles.viewBarWrapper} onPress={(e) => { this.onStatusPress(e) }}>
-                        <View style={styles.viewBar}>
-                            <View style={[styles.viewBarPlay, { width: playWidth },]} />
-                        </View>
-                    </TouchableOpacity>
-                    <Text style={styles.txtCounter}>{this.state.playTime} / {this.state.duration}</Text>
+                    <Slider
+                        onTouchStart={() => this.onSliderEditStart()}
+                        onTouchEnd={() => this.onSliderEditEnd()}
+                        onValueChange={(value) => this.onSliderEditing(value)}
+                        value={this.state.playTime} maximumValue={this.state.duration} maximumTrackTintColor='gray' minimumTrackTintColor='white' thumbTintColor='white'
+                        style={styles.slider} />
+                    <Text style={styles.txtCounter}>{this.state.playTimeStr} / {this.state.durationStr}</Text>
                     <View style={styles.playBtnWrapper}>
-                        <RecorderButton style={styles.btn} onPress={this.onStartPlay} textStyle={styles.txt}>{titleString.PLAY}</RecorderButton>
-                        <RecorderButton style={[styles.btn, { marginLeft: 12 * ratio, },]} onPress={this.onPausePlay} textStyle={styles.txt}>{titleString.PAUSE}</RecorderButton>
-                        <RecorderButton style={[styles.btn, { marginLeft: 12 * ratio, },]} onPress={this.onStopPlay} textStyle={styles.txt}>{titleString.STOP}</RecorderButton>
+                        <RecorderButton style={styles.btn} onPress={() => this.playFunc(butText.play)} textStyle={styles.txt}>{butText.play}</RecorderButton>
+                        <RecorderButton style={[styles.btn, { marginLeft: 100 * ratio, },]} onPress={() => this._playStop()} textStyle={styles.txt}>{titleString.STOP}</RecorderButton>
                     </View>
-                    <View style={styles.playBtnWrapper}>
-                        <RecorderButton style={styles.btn} onPress={this.onUpload} textStyle={styles.txt}>{titleString.UPLOAD}</RecorderButton>
-                        <RecorderButton style={[styles.btn, { marginLeft: 12 * ratio, },]} onPress={this.onCancel} textStyle={styles.txt}>{titleString.CANCEL}</RecorderButton>
-                    </View>
+                    <Button style={styles.actionBtn} block onPress={() => this.onUpload()} ><Text style={styles.buttonTitle}>{titleString.UPLOAD}</Text></Button>
+                    <Button style={styles.actionBtn} block onPress={() => this.onUpload(false)} ><Text style={styles.buttonTitle}>{titleString.CANCEL}</Text></Button>
+                    {/* <View style={styles.playBtnWrapper}>
+                        <RecorderButton style={styles.btn} onPress={() => this.onUpload()} textStyle={styles.txt}>{titleString.UPLOAD}</RecorderButton>
+                        <RecorderButton style={[styles.btn, { marginLeft: 100 * ratio, },]} onPress={() => this.onCancel()} textStyle={styles.txt}>{titleString.CANCEL}</RecorderButton>
+                    </View> */}
                 </View>
             </View>
         );
     }
-
-
 }
+
 const styles = StyleSheet.create({
     container: {
         position: 'absolute',
@@ -220,7 +354,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
     },
     viewPlayer: {
-        marginTop: 60 * ratio,
+        marginTop: 30 * ratio,
         alignSelf: 'stretch',
         alignItems: 'center',
     },
@@ -228,6 +362,12 @@ const styles = StyleSheet.create({
         marginTop: 28 * ratio,
         marginHorizontal: 28 * ratio,
         alignSelf: 'stretch',
+    },
+    slider: {
+        marginTop: 20 * ratio,
+        marginHorizontal: 28 * ratio,
+        alignSelf: 'stretch',
+        // marginHorizontal: Platform.select({ ios: 5 })
     },
     viewBar: {
         backgroundColor: '#555',
@@ -245,7 +385,7 @@ const styles = StyleSheet.create({
     },
     playBtnWrapper: {
         flexDirection: 'row',
-        marginTop: 40 * ratio,
+        marginVertical: 40 * ratio,
     },
     btn: {
         borderColor: 'white',
@@ -274,5 +414,15 @@ const styles = StyleSheet.create({
         fontWeight: '200',
         fontFamily: 'Helvetica Neue',
         letterSpacing: 3,
+    },
+    actionBtn: {
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: 20 * ratio,
+        marginHorizontal: 50 * ratio,
+    },
+    buttonTitle: {
+        color: 'white',
+        fontSize: scale(20),
     },
 });

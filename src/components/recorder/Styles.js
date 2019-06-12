@@ -23,3 +23,26 @@ export const titleString = {
   UPLOAD: 'Upload',
   CANCEL: 'Back'
 };
+export const recordState = {
+  ready: 'ready',
+  recording: 'recording',
+  paused: 'paused',
+  stopped: 'stopped',
+  playing: 'playing',
+  play_paused: 'play_paused',
+}
+export const getButTxt = (state) => {
+  switch (state) {
+    case recordState.ready:
+      return { record: 'Record', play: 'Play' };
+    case recordState.recording:
+      return { record: 'Pause', play: 'Play' };
+    case recordState.paused:
+      return { record: 'Resume', play: 'Play' };
+    case recordState.playing:
+      return { record: 'Record', play: 'Pause' };
+    case recordState.play_paused:
+      return { record: 'Record', play: 'Resume' };
+
+  }
+}

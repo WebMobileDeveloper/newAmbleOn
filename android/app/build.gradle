@@ -101,7 +101,7 @@ android {
         applicationId "com.ambleon"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
+        versionCode 4
         versionName "1.0"
         vectorDrawables.useSupportLibrary true
     }
@@ -151,6 +151,8 @@ android {
 }
 
 dependencies {
+    implementation project(':react-native-sound')
+    implementation project(':react-native-audio')
     implementation project(':react-native-fbsdk')
     implementation project(':react-native-google-signin')
     implementation project(':rn-fetch-blob')

@@ -58,6 +58,7 @@ export default (state = initialState, action) => {
         isToursLoading: true,
       };
     case GET_TOURS_SUCCESS:
+      console.log("tours list= ",action.payload)
       return {
         ...state,
         isToursLoading: false,

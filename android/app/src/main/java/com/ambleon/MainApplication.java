@@ -3,6 +3,8 @@ package com.ambleon;
 import android.app.Application;
 
 import com.facebook.react.ReactApplication;
+import com.zmxv.RNSound.RNSoundPackage;
+import com.rnim.rn.audio.ReactNativeAudioPackage;
 import com.facebook.reactnative.androidsdk.FBSDKPackage;
 import co.apptailor.googlesignin.RNGoogleSigninPackage;
 import com.RNFetchBlob.RNFetchBlobPackage;
@@ -46,21 +48,19 @@ public class MainApplication extends Application implements ReactApplication {
     protected List<ReactPackage> getPackages() {
       return Arrays.<ReactPackage>asList(
           new MainReactPackage(),
-            new FBSDKPackage(),
-            new RNGoogleSigninPackage(),
-            new RNFetchBlobPackage(),
-            new ReactVideoPackage(),
-            new VectorIconsPackage(),
-            new ReactNativeDocumentPicker(),
-            new RNAudioRecorderPlayerPackage(),
+            new RNSoundPackage(),
+            new ReactNativeAudioPackage(),
+          new RNFetchBlobPackage(),
+          new ReactVideoPackage(),
+          new VectorIconsPackage(),
+          new ReactNativeDocumentPicker(),
+          new RNAudioRecorderPlayerPackage(),
           new RNGoogleSigninPackage(),
           new RNGestureHandlerPackage(),
           new FBSDKPackage(mCallbackManager),
           new MapsPackage(),
           new RNFusedLocationPackage(),
-              new PickerPackage()
-
-
+          new PickerPackage()
       );
     }
 

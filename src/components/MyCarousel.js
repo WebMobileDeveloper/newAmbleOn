@@ -15,6 +15,8 @@ export default class MyCarousel extends Component {
             entries: [],
             activeSlide: 0
         }
+        this._renderItem = this._renderItem.bind(this);
+        this.pagination = this.pagination.bind(this);
     }
     componentDidMount() {
         this.setState({ entries: this.props.data });
@@ -38,11 +40,7 @@ export default class MyCarousel extends Component {
                     <VideoPlayer
                         source={{ uri: `${images.imageServiceUrl}${item.uri}` }} style={styles.backgroundVideo}
                         paused={true}
-                        // navigator={this.props.navigator ? this.props.navigator : null}
                     />
-                    {/* <Video source={{ uri: `${images.imageServiceUrl}${item.uri}` }}
-                        controls={true} repeat={true} resizeMode={"cover"} volume={1.0} rate={1.0} style={styles.backgroundVideo}            // ignoreSilentSwitch={"inherit"}          
-                    /> */}
                 </View>
             case 3:
                 return <View style={styles.swiperChild} key={index}><Player path={`${images.imageServiceUrl}${item.uri}`} /></View>
@@ -73,18 +71,17 @@ export default class MyCarousel extends Component {
     }
 
     render() {
-        console.log("entries==", this.state.entries)
-        console.log("data=", this.props.data)
         return (
             <View>
                 <Carousel
                     data={this.state.entries}
                     renderItem={this._renderItem}
                     onSnapToItem={(index) => this.setState({ activeSlide: index })}
-                    layout={'default'}
-                    sliderWidth={width(100)}
+                    layout={'stack'}
+                    layoutCardOffset={8}
+                    sliderWidth={width(80)}
                     sliderHeight={height(40)}
-                    itemWidth={width(80)}
+                    itemWidth={width(70)}
                     itemHeight={height(40)}
                 // sliderWidth={300}
                 // sliderHeight={50}

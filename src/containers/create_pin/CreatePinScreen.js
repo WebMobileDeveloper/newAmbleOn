@@ -20,12 +20,12 @@ export default class CreatePinScreen extends Component {
     this.onSavePin = this.onSavePin.bind(this);
   }
   choiceAcion(needCamera, media_type) {
-    this.setState({ modalVisible: false },()=>{
+    this.setState({ modalVisible: false }, () => {
       let self = this
-      setTimeout(()=>{
+      setTimeout(() => {
         self.props.openPicker(needCamera, media_type);
-      },500)
-      
+      }, 500)
+
     });
   }
 
@@ -62,6 +62,9 @@ export default class CreatePinScreen extends Component {
               isValid={touched.description && description} handleChange={handleChange('description')} handleBlur={handleBlur('description')} />
           </Form>
 
+          {/* <Button block disabled={!isFormValid} style={styles.submitBtn} onPress={() => this.setState({ modalVisible: true })} >
+            {isCreatePinLoading ? <ActivityIndicator large color={colors.primary} /> : <Text style={styles.buttonTitle}>{this.props.pinId ? 'Add New Media' : 'Add Pin with Media'} </Text>}
+          </Button> */}
           <Button block disabled={!isFormValid} style={styles.submitBtn} onPress={() => this.setState({ modalVisible: true })} >
             {isCreatePinLoading ? <ActivityIndicator large color={colors.primary} /> : <Text style={styles.buttonTitle}>{this.props.pinId ? 'Add New Media' : 'Add Pin with Media'} </Text>}
           </Button>

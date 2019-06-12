@@ -1,93 +1,162 @@
-import React, { Component, SyntheticEvent } from 'react';
+import React, { Component, } from 'react';
 import {
-    Platform,
     StyleSheet,
-    TouchableOpacity,
     Text,
     View,
-    PermissionsAndroid,
-    Button,
-    Alert
+    Alert,
+    Slider
 } from 'react-native';
+import Sound from 'react-native-sound';
 
-import { ratio, colors, screenWidth, titleString } from './Styles';
+import { ratio, screenWidth, titleString, recordState, getButTxt } from './Styles';
 import RecorderButton from './RecorderButton';
+import { mmss, } from '../../Const';
 
-import AudioRecorderPlayer from 'react-native-audio-recorder-player';
 
+Sound.setCategory('Playback');
 export default class Player extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            currentPositionSec: 0,
-            currentDurationSec: 0,
-            playTime: '00:00:00',
-            duration: '00:00:00',
             uri: null,
+            playTime: 0,
+            duration: 0,
+            playTimeStr: '00:00',
+            durationStr: '00:00',
+            recordState: recordState.ready,
         };
-
-        this.audioRecorderPlayer = new AudioRecorderPlayer();
-        // this.audioRecorderPlayer.setSubscriptionDuration(0.09); // optional. Default is 0.1
-        this.onStatusPress = this.onStatusPress.bind(this);
-        this.onStartPlay = this.onStartPlay.bind(this);
-        this.onPausePlay = this.onPausePlay.bind(this);
-        this.onStopPlay = this.onStopPlay.bind(this);
+        this._isMounted = false;
+        this.Player = null;
+        this.sliderEditing = false;
     }
-    onStatusPress = (e) => {
-        const touchX = e.nativeEvent.locationX;
-        const playWidth = (this.state.currentPositionSec / this.state.currentDurationSec) * (screenWidth - 56 * ratio);
-        const currentPosition = Math.round(this.state.currentPositionSec);
-
-        if (playWidth && playWidth < touchX) {
-            const addSecs = Math.round((currentPosition + 3000));
-            this.audioRecorderPlayer.seekToPlayer(addSecs);
-        } else {
-            const subSecs = Math.round((currentPosition - 3000));
-            this.audioRecorderPlayer.seekToPlayer(subSecs);
+    componentDidMount() {
+        this._isMounted = true;
+        this.timeout = setInterval(() => {
+            if (this.Player && this.Player.isLoaded() && this.state.recordState == recordState.playing && !this.sliderEditing) {
+                this.Player.getCurrentTime((seconds, isPlaying) => {
+                    this._isMounted && this.setState({ playTime: seconds, playTimeStr: mmss(seconds) });
+                })
+            }
+        }, 100);
+    }
+    componentWillUnmount() {
+        let self = this;
+        self._isMounted = false;
+        if (self.timeout) {
+            clearInterval(self.timeout);
+        }
+        self._playStop();
+    }
+    // =============================================
+    //              play functions
+    // =============================================
+    playFunc = (butText) => {
+        switch (butText) {
+            case 'Play':
+                this._play();
+                break;
+            case 'Pause':
+                this._playPause();
+                break;
+            case 'Resume':
+                this._play();
+                break;
         }
     }
 
-    onStartPlay = async () => {
-        const msg = await this.audioRecorderPlayer.startPlayer(this.props.path);
-        this.audioRecorderPlayer.setVolume(1.0);
-        this.audioRecorderPlayer.addPlayBackListener((e) => {
-            if (e.current_position === e.duration) {
-                this.audioRecorderPlayer.stopPlayer();
-                this.audioRecorderPlayer.removePlayBackListener();
-            }
-            this.setState({
-                currentPositionSec: e.current_position,
-                currentDurationSec: e.duration,
-                playTime: this.audioRecorderPlayer.mmssss(Math.floor(e.current_position)),
-                duration: this.audioRecorderPlayer.mmssss(Math.floor(e.duration)),
+    async _play() {
+        if (this.Player) {
+            this.setState({ recordState: recordState.playing });
+            this.Player.play(this.playComplete);
+        } else {
+            setTimeout(() => {
+            this.Player = new Sound(this.props.path, '', (error) => {
+                if (error) {
+                    console.log('failed to load the sound', error);
+                } else {
+                    if (this._isMounted) {
+                        const duration = this.Player.getDuration();
+                        this.setState({
+                            recordState: recordState.playing,
+                            duration: duration,
+                            durationStr: mmss(duration)
+                        });
+                        this.Player.play(this.playComplete);
+                    }
+                }
             });
-            return;
-        });
+            }, 100);
+        }
+    }
+    async playComplete(success) {
+        if (this.Player && this._isMounted) {
+            if (!success) {
+                Alert.alert('Notice', 'audio file error');
+            }
+            await this._playStop();
+        }
+    }
+    _playPause() {
+        this.Player.pause(() => {
+            this._isMounted && this.setState({ recordState: recordState.play_paused })
+        })
     }
 
-    onPausePlay = async () => {
-        await this.audioRecorderPlayer.pausePlayer();
+    _playStop() {
+        const self = this;
+        return new Promise((resolve, reject) => {
+            if (!self.Player) {
+                resolve()
+            }
+            self.Player.stop(() => {
+                self.Player.release();
+                self.Player = null;
+                if (self._isMounted) {
+                    self.setState({
+                        recordState: recordState.ready,
+                        playTime: 0,
+                        playTimeStr: mmss(0),
+                    }, () => {
+                        resolve()
+                    });
+                } else {
+                    resolve()
+                }
+            })
+        })
+
     }
-    onStopPlay = async () => {
-        this.audioRecorderPlayer.stopPlayer();
-        this.audioRecorderPlayer.removePlayBackListener();
+
+    onSliderEditStart = () => {
+        this.sliderEditing = true;
     }
+    onSliderEditEnd = () => {
+        this.sliderEditing = false;
+    }
+    onSliderEditing = value => {
+        if (this.Player) {
+            this.Player.setCurrentTime(value);
+            this.setState({ playTime: value, playTimeStr: mmss(value) });
+        }
+    }
+
+
     render() {
-        const playWidth = this.state.currentDurationSec == 0 ? 0 : (this.state.currentPositionSec / this.state.currentDurationSec) * ((screenWidth * 0.8) * ratio);
+        let butText = getButTxt(this.state.recordState);
         return (
             <View style={styles.container}>
-                <Text style={styles.titleTxt}>{titleString.TITLE}</Text>
+                <Text style={styles.titleTxt}>Audio Player</Text>
                 <View style={styles.viewPlayer}>
-                    <TouchableOpacity style={styles.viewBarWrapper} onPress={(e) => { this.onStatusPress(e) }}>
-                        <View style={styles.viewBar}>
-                            <View style={[styles.viewBarPlay, { width: playWidth },]} />
-                        </View>
-                    </TouchableOpacity>
-                    <Text style={styles.txtCounter}>{this.state.playTime} / {this.state.duration}</Text>
+                    <Slider
+                        onTouchStart={() => this.onSliderEditStart()}
+                        onTouchEnd={() => this.onSliderEditEnd()}
+                        onValueChange={(value) => this.onSliderEditing(value)}
+                        value={this.state.playTime} maximumValue={this.state.duration} maximumTrackTintColor='gray' minimumTrackTintColor='white' thumbTintColor='white'
+                        style={styles.slider} />
+                    <Text style={styles.txtCounter}>{this.state.playTimeStr} / {this.state.durationStr}</Text>
                     <View style={styles.playBtnWrapper}>
-                        <RecorderButton style={styles.btn} onPress={this.onStartPlay} textStyle={styles.txt}>{titleString.PLAY}</RecorderButton>
-                        <RecorderButton style={[styles.btn, { marginLeft: 50 * ratio, },]} onPress={this.onPausePlay} textStyle={styles.txt}>{titleString.PAUSE}</RecorderButton>
-                        <RecorderButton style={[styles.btn, { marginLeft: 50 * ratio, },]} onPress={this.onStopPlay} textStyle={styles.txt}>{titleString.STOP}</RecorderButton>
+                        <RecorderButton style={styles.btn} onPress={() => this.playFunc(butText.play)} textStyle={styles.txt}>{butText.play}</RecorderButton>
+                        <RecorderButton style={[styles.btn, { marginLeft: 100 * ratio, },]} onPress={() => this._playStop()} textStyle={styles.txt}>{titleString.STOP}</RecorderButton>
                     </View>
                 </View>
             </View>
@@ -97,15 +166,12 @@ export default class Player extends Component {
 
 }
 const styles = StyleSheet.create({
+
     container: {
-        // position: 'absolute',
-        // top: 0,
-        // left: 0,
-        // right: 0,
-        // bottom: 0,
-        padding: 20,
-        flexDirection: 'column',
+        // flexDirection: 'column',
         alignItems: 'center',
+        alignSelf: 'stretch',
+        padding: 20,
         backgroundColor: 'rgb(4, 19, 58)'
     },
     titleTxt: {
@@ -177,5 +243,11 @@ const styles = StyleSheet.create({
         fontWeight: '200',
         fontFamily: 'Helvetica Neue',
         letterSpacing: 3,
+    },
+    slider: {
+        marginTop: 20 * ratio,
+        marginHorizontal: 5 * ratio,
+        alignSelf: 'stretch',
+        // marginHorizontal: Platform.select({ ios: 5 })
     },
 });
