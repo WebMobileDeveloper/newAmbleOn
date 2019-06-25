@@ -1,11 +1,9 @@
-import React, { Component, SyntheticEvent } from 'react';
-import { Platform, StyleSheet, TouchableOpacity, Text, View, PermissionsAndroid, Alert, TouchableHighlight, Slider } from 'react-native';
-import { Form, Button } from 'native-base';
-import { ratio, colors, screenWidth, titleString, getRecButTxt, recordState, getButTxt } from './Styles';
+import React, { Component, } from 'react';
+import { Platform, StyleSheet, Text, View, Alert, Slider } from 'react-native';
+import { Button } from 'native-base';
+import { ratio, titleString, recordState, getButTxt } from './Styles';
 import RecorderButton from './RecorderButton';
-import AudioRecorderPlayer from 'react-native-audio-recorder-player';
-import RNFetchBlob from 'rn-fetch-blob';
-import { mmss, mmssss } from '../../Const';
+import { mmss } from '../../Const';
 import { scale } from '../../utils/dimensions';
 
 
@@ -123,7 +121,6 @@ export default class Recorder extends Component {
         }
 
         try {
-            console.log("this.state.recordState", this.state.recordState)
             await AudioRecorder.startRecording();
             this._isMounted && this.setState({ recordState: recordState.recording });
         } catch (error) {

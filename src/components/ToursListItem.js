@@ -7,6 +7,8 @@ import images from '../constants/images';
 import { scale } from '../utils/dimensions';
 import colors from '../constants/colors';
 import { MyAirbnbRating } from './customElements';
+import { DEV_ENV } from "../Const";
+import { RESTService } from "../services/RESTservice";
 
 const ToursListItem = ({ item, showTourPreview }) => {
   return (
@@ -30,6 +32,13 @@ const ToursListItem = ({ item, showTourPreview }) => {
       containerStyle={styles.containerStyle}
       titleStyle={styles.titleStyle}
       onPress={() => showTourPreview(item)}
+      rightIcon={DEV_ENV ? {
+        raised: true,
+        name: 'heartbeat',
+        type: 'font-awesome',
+        color: '#f50',
+        onPress: () => { RESTService.deleteTour(item.id) }
+      } : {}}
     />
   );
 };

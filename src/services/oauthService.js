@@ -33,9 +33,9 @@ export default {
         accessToken,
         user: { id: userId },
       } = await GoogleSignin.signIn();
+      console.log("+++ Accesstoken, userid", accessToken, userId);
       success(accessToken, userId);
     } catch (error) {
-      // alert(error)
       if (error.code === 'SIGN_IN_CANCELLED') {
         // user cancelled the login flow
       } else if (error.code === 'IN_PROGRESS') {

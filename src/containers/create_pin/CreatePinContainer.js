@@ -64,9 +64,11 @@ class CreatePinContainer extends Component {
           height: 300,
           cropping: true,
         }).then(async image => {
+          console.log("image",image);
           const fileName = getFileName(image.path);
           const fileExtension = getFileExtention(image.path);
-          const final_filename = Platform.OS === 'ios' ? image.filename : `${fileName}${fileExtension}`;
+          // const final_filename = Platform.OS === 'ios' ? image.filename : `${fileName}${fileExtension}`;
+          const final_filename = `${fileName}${fileExtension}`;
           const file = {
             imagePath: image.path,
             type: `image/${fileExtension}`,
@@ -160,7 +162,6 @@ class CreatePinContainer extends Component {
   };
 
   saveRecordAudio = (uri) => {
-    console.log("uri====", uri)
     const fileName = getFileName(uri);
     const fileExtension = getFileExtention(uri);
     const final_filename = `${fileName}${fileExtension}`;
@@ -169,7 +170,6 @@ class CreatePinContainer extends Component {
       type: `audio/${fileExtension}`,
       name: final_filename,
     }
-    console.log("file====", file)
     this.handleCreatePinSubmit(3, file);
   }
   render() {

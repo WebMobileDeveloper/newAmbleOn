@@ -10,6 +10,7 @@
   "dependencies": {
     "@mapbox/polyline": "^1.0.0",
     "apisauce": "1.0.2",
+    "axios": "^0.19.0",
     "babel-eslint": "10.0.1",
     "form-data": "^2.3.3",
     "formik": "1.5.1",
@@ -18,7 +19,6 @@
     "react": "16.6.3",
     "react-native": "0.58.6",
     "react-native-audio": "^4.3.0",
-    "react-native-audio-recorder-player": "^2.1.4",
     "react-native-dimension": "^1.0.6",
     "react-native-document-picker": "^2.3.0",
     "react-native-elements": "^1.1.0",

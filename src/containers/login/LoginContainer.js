@@ -29,7 +29,6 @@ class LoginContainer extends PureComponent {
     const { navigation, googleSignIn } = this.props;
     await oauthService.google({
       success: (accessToken, userId) =>{
-        console.log(accessToken, userId)
         return googleSignIn({ accessToken, userId, cb: () => navigation.navigate('AppStack') })
       }
     });

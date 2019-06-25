@@ -24,7 +24,6 @@ const TourPreviewScreen = ({
     currTour, navigation, showOverlay, newRate,
     navigateStartTour, onShowFeedbackOverlay, onCloseOverlay, onGiveFeedback, ratingCompleted }) => {
     const tourImage = renderPrevImage(currTour.pins);
-    console.log("tourImage",tourImage)
     return (
         <View style={styles.container}>
             <View style={styles.headerContainer}>

@@ -26,7 +26,5 @@ export const mmssss = (milisecs) => {
     const minutes = Math.floor(secs / 60);
     const seconds = secs % 60;
     const miliseconds = Math.floor((milisecs % 1000) / 10);
-    console.log('milisecs: ' + milisecs);
-    console.log('min: ' + minutes + ', secs: ' + seconds + ', ' + miliseconds);
     return pad(minutes) + ':' + pad(seconds) + ':' + pad(miliseconds);
 };

@@ -22,7 +22,6 @@ export default class MyCarousel extends Component {
         this.setState({ entries: this.props.data });
     }
     componentWillReceiveProps(nextProps) {
-        console.log("nextProps==== ", nextProps)
         if (nextProps.data !== this.props.data) {
             //Perform some operation
             this.setState({ entries: nextProps.data });
