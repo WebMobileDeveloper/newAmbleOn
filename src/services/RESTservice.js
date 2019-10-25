@@ -11,7 +11,10 @@ const api = create({
 
 export const RESTService = {
   facebookSignIn: (accessToken, userId) => api.post('auth/login/facebook/', { accessToken, userId }),
-  googleSignIn: (accessToken, userId) => api.post('auth/login/google/', { accessToken, userId }),
+  googleSignIn: (accessToken, userId) => {
+    console.log("accessToken, userId ====",accessToken, userId );
+    return api.post('auth/login/google/', { accessToken, userId })
+  },
   logout: () => api.post('auth/logout'),
   getTours: () => api.get('tour'),
   getPinsForTour: tourId => api.get(`tour/${tourId}/pin`),

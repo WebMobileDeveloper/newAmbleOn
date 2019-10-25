@@ -98,7 +98,7 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
 
     defaultConfig {
-        applicationId "com.ambleon"
+        applicationId "com.new_ambleon"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 4
@@ -129,13 +129,13 @@ android {
     }
     signingConfigs {
         debug {
-            storeFile file("../geotouristdebug.keystore")
+            storeFile file("./keystore/geotouristdebug.keystore")
             storePassword "geotourist"
             keyAlias "key0"
             keyPassword "geotouristkey0"
         }
         release {
-                storeFile file("geotouristrelease.keystore")
+                storeFile file("./keystore/geotouristrelease.keystore")
                 storePassword "geotouristrelease"
                 keyAlias "key0"
                 keyPassword "geotouristkeyrelease"

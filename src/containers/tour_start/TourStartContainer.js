@@ -36,6 +36,7 @@ class TourStartContainer extends Component {
 
   async componentDidMount() {
     const pinsArray = await this.getPinsFromStore();
+    console.log("pinsArray===", pinsArray)
     getRoutArray(pinsArray).then(routArray => {
       InteractionManager.runAfterInteractions(() => {
         this.setState({ routArray, dataReady: true });
@@ -69,13 +70,18 @@ class TourStartContainer extends Component {
 
   getPinsFromStore = () => {
     const { toursList, navigation } = this.props;
-    const pinsWithStatus = [];
+    let pinsWithStatus = [];
     toursList.forEach(item => {
       if (item.id === navigation.state.params.id) {
         item.pins.forEach(pin => {
           pinsWithStatus.push({ ...pin, complete: false });
         });
       }
+    });
+    pinsWithStatus = pinsWithStatus.sort((a, b) => {
+      if (b.createdAt > a.createdAt) return -1;
+      if (b.createdAt < a.createdAt) return 1;
+      return 0;
     });
     this.setState({
       pinsArray: pinsWithStatus,

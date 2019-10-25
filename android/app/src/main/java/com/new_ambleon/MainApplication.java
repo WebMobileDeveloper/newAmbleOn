@@ -1,4 +1,4 @@
-package com.ambleon;
+package com.new_ambleon;
 
 import android.app.Application;
 
@@ -53,7 +53,7 @@ public class MainApplication extends Application implements ReactApplication {
           new ReactVideoPackage(),
           new VectorIconsPackage(),
           new ReactNativeDocumentPicker(),
-          new RNAudioRecorderPlayerPackage(),
+          // new RNAudioRecorderPlayerPackage(),
           new RNGoogleSigninPackage(),
           new RNGestureHandlerPackage(),
           new FBSDKPackage(mCallbackManager),

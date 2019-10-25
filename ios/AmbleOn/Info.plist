@@ -33,12 +33,12 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.googleusercontent.apps.291405854067-68mbhgpldam5hkn1rd3pisp8ihsg4k4l</string>
+				<string>com.googleusercontent.apps.377027305156-308rjc8b3pb4krou3vmtkgebmtegqjcd</string>
 			</array>
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
-	<string>4</string>
+	<string>7</string>
 	<key>FacebookAppID</key>
 	<string>2632017823480237</string>
 	<key>FacebookDisplayName</key>
